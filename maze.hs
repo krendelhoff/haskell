@@ -55,3 +55,40 @@ dfs _ [] _ = Nothing
 dfs grid ((pos, path):xs) visited =
   case grid `at` pos of
     Exit -> Just (reverse path)
+    _ ->
+      let neighbors = [(move pos dir, dir : path) | dir <- allDirections]
+          legalNeighbors =
+            [ (newPos, newPath)
+            | (newPos, newPath) <- neighbors
+            , grid `at` newPos /= Wall
+            , not (newPos `elem` visited)
+            ]
+       in dfs grid (legalNeighbors ++ xs) (pos : visited)
+
+bfs :: Grid -> [(Position, Path)] -> [Position] -> Maybe Path
+bfs _ [] _ = Nothing
+bfs grid ((pos, path):xs) visited =
+  case grid `at` pos of
+    Exit -> Just (reverse path)
+    _ ->
+      let neighbors = [(move pos dir, dir : path) | dir <- allDirections]
+          legalNeighbors =
+            [ (newPos, newPath)
+            | (newPos, newPath) <- neighbors
+            , grid `at` newPos /= Wall
+            , not (newPos `elem` visited)
+            ]
+       in bfs grid (xs ++ legalNeighbors) (pos : visited)
+
+runDfs :: Grid -> Maybe Path
+runDfs grid = dfs grid [(startPos grid, [])] []
+
+main :: IO ()
+main = do
+  input <- readFile "maze.txt"
+  let grid = parseGrid input
+      output =
+        case runDfs grid of
+          Nothing   -> "No solution!"
+          Just path -> show path
+  putStrLn output
