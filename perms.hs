@@ -1,3 +1,5 @@
+import           Data.List
+
 perms :: [a] -> [[a]]
 perms =
   foldl
@@ -17,3 +19,4 @@ main = do
   print $ lst
   print $ perms lst
   print $ length lst
+  print $ sort . nub . perms $ lst
