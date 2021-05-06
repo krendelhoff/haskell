@@ -9,8 +9,17 @@ data Expr
   deriving (Show, Eq)
 
 expand :: Expr -> Expr
-expand ((e1 :+: e2) :*: e) = expand e1 :*: expand e :+: expand e2 :*: expand e
-expand (e :*: (e1 :+: e2)) = expand e :*: expand e1 :+: expand e :*: expand e2
-expand (e1 :+: e2)         = expand e1 :+: expand e2
-expand (e1 :*: e2)         = expand e1 :*: expand e2
-expand e                   = e
+expand expr = helper expr (expandRec expr)
+  where
+    expandRec ((e1 :+: e2) :*: e) =
+      expandRec e1 :*: expandRec e :+: expandRec e2 :*: expandRec e
+    expandRec (e :*: (e1 :+: e2)) =
+      expandRec e :*: expandRec e1 :+: expandRec e :*: expandRec e2
+    expandRec (e1 :+: e2) = expandRec e1 :+: expandRec e2
+    expandRec (e1 :*: e2) = expandRec e1 :*: expandRec e2
+    expandRec e = e
+    helper expr1 expr2
+      | expr1 == expr2 = expr1
+      | otherwise = helper expr2 (expandRec expr2)
+
+main = print $ expand $ (Val 1 :+: Val 2 :+: Val 3) :*: (Val 4 :+: Val 5)
