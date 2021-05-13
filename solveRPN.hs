@@ -1,12 +1,20 @@
 import           Data.List
 
-solveRPN :: String -> Double
-solveRPN = head . foldl f [] . words
+solveRPN :: String -> Maybe Double
+solveRPN st = do
+  [result] <- foldM f [] (words st) -- учитывает контекст
+  return result
   where
-    f (x:y:ys) "*"    = (x * y) : ys
-    f (x:y:ys) "+"    = (x + y) : ys
-    f (x:y:ys) "-"    = (y - x) : ys
-    f (x:y:ys) "^"    = (y ** x) : ys
-    f (x:xs) "ln"     = log x : xs
-    f xs "sum"        = [sum xs]
-    f xs numberString = read numberString : xs
+    readMaybe :: (Read a) => String -> Maybe a
+    readMaybe st =
+      case reads st of
+        [(x, "")] -> Just x
+        _         -> Nothing
+    f :: [Double] -> String -> Maybe [Double]
+    f (x:y:ys) "*"    = return (x * y) : ys
+    f (x:y:ys) "+"    = return (x + y) : ys
+    f (x:y:ys) "-"    = return (y - x) : ys
+    f (x:y:ys) "^"    = return (y ** x) : ys
+    f (x:xs) "ln"     = return log x : xs
+    f xs "sum"        = return [sum xs]
+    f xs numberString = liftM (: xs) $ readMaybe numberString
