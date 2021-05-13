@@ -23,3 +23,9 @@ instance Functor IO where
   f `fmap` boba = do
     x <- boba
     return $ f x
+
+(λg . ((λx . (g (x x))) (λx . (g (x x))))) -- ненормализуемый терм
+
+(λg . ((λf . ((λx . (f (x x))) (λx . (f (x x))))) g))
+
+(\p -> \q -> q (p r) s) (q (p r) s)
