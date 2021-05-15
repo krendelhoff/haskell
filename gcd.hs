@@ -1,17 +1,15 @@
-gcdd :: Integer -> Integer -> Integer
-gcdd a b
-  | a < b = gcdd b a
-gcdd a 0 = a
-gcdd a b = gcdd b (a `mod` b)
+import           Control.Monad.Writer
 
-llcm :: Integer -> Integer -> Integer
-llcm a b = (a * b) `div` (gcdd a b)
+gcd' :: (Integral a, Show a) => a -> a -> Writer [String] a
+gcd' a 0 = do
+  tell $ ["Final result is: " ++ show a]
+  return a
+gcd' a b = do
+  let r = a `mod` b
+  tell $ [show a ++ " % " ++ show b ++ " = " ++ show r]
+  gcd' b r
 
-readInput :: IO (Integer, Integer)
-readInput = readLn >>= \a -> readLn >>= \b -> pure (a, b)
-
-printOutput :: Integer -> Integer -> IO ()
-printOutput g l = print g >> print l
-
-main :: IO ()
-main = readInput >>= ((\(a, b) -> printOutput (gcdd a b) (llcm a b)))
+main = do
+  n1 <- readLn
+  n2 <- readLn
+  mapM_ putStrLn . snd . runWriter $ gcd' n1 n2

@@ -1,11 +1,20 @@
+import           Control.Monad.Writer
 import           Data.List
 
 nextBigger :: Int -> Int
-nextBigger n = undefined
+nextBigger n =
+  let (ret, res) = runWriter . tryFlip . reverse . show $ n
+   in if res == "lost"
+        then -1
+        else read . reverse $ ret
   where
-    result str _ | ((read str) :: Int) < 10 = -1
-    result 
+    tryFlip :: String -> Writer String String
+    tryFlip [] = tell "lost" >> return []
+    tryFlip [x] = tell "lost" >> return [x]
+    tryFlip (x:y:xs) = do
+      if y < x
+        then tell "win" >> return (y : x : xs)
+        else tryFlip (y : xs) >>= (\ys -> return (x : ys))
 
--- идею понял - идем с конца, как только нашли что можно свапнуть - свапаем и возвращаем. Никакой explicit recursion, подумай потом как реализовать через правую свертку
-
+-- ты гений, монады прекрасны. Все эффекты идеально контроллируются.
 main = print $ nextBigger (-521)
