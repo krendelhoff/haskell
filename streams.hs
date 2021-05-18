@@ -9,6 +9,10 @@ data Stream a =
 
 infixr :>
 
+class Category cat where
+  idd :: cat a a
+  (!.!) :: cat b c -> cat a b -> cat a c
+
 instance (Num a) => Num (Stream a) where
   (+) = zipWithS (+)
   (*) = zipWithS (*)
@@ -25,6 +29,18 @@ ap _ [] = []
 ap (St f) (x:xs) =
   let (b, newf) = f x
    in b : ap newf xs
+
+instance Category St where
+  idd = St (\x -> (x, idd))
+  (St f) !.! (St g) =
+    St
+      (\a ->
+         let (b, st1) = g a
+             (c, st2) = f b
+          in (c, st2 !.! st1))
+
+constSt :: a -> St b a
+constSt a = St (\_ -> (a, constSt a))
 
 -- | Get the first element of a stream.
 headS :: Stream a -> a
