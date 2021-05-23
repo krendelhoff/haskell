@@ -67,8 +67,16 @@ isJust (SMaybe f) = f False (\_ -> True)
 isNothing :: SMaybe a -> Bool
 isNothing (SMaybe f) = f True (\_ -> False)
 
+fromJust :: SMaybe a -> a
+fromJust (SMaybe f) = f (error "it is Nothing!") id
+
 catMaybes :: SList (SMaybe a) -> SList a
-catMaybes = error "catMaybes"
+catMaybes (SList f) =
+  f nihil
+    (\h t ->
+       if isJust h
+         then cons (fromJust h) (catMaybes t)
+         else catMaybes t)
 
 -- either = (\x l r -> l x)
 --        = (\x l r -> r x)
@@ -85,48 +93,61 @@ isLeft (SEither f) = f (\_ -> True) (\_ -> False)
 isRight :: SEither a b -> Bool
 isRight (SEither f) = f (\_ -> False) (\_ -> True)
 
-partition :: SList (SEither a b) -> SPair (SList a) (SList b)
-partition = error "partition"
+fromLeft :: SEither a b -> a
+fromLeft (SEither f) = f id (error "it is not Left!")
 
-{-newtype SList a =
-  SList
-    { runList :: forall b. b -> (a -> SList a -> b) -> b
-    }-}
+fromRight :: SEither a b -> b
+fromRight (SEither f) = f (error "it is not Right!") id
+
+partition :: SList (SEither a b) -> SPair (SList a) (SList b)
+partition (SList f) =
+  f (fromPair (nihil, nihil))
+    (\h t ->
+       let done = partition t
+        in if isLeft h
+             then fromPair (cons (fromLeft h) $ fst done, snd done)
+             else fromPair (fst done, cons (fromRight h) $ snd done))
+
 -- list = (\h t n c -> c h t)
 --      = (\n c -> n)
 toList :: SList a -> [a]
-toList l@(SList f) = undefined
-
-head :: SList a -> a
-head (SList f) = undefined
+toList (SList f) = f [] (\h t -> h : toList t)
 
 fromList :: [a] -> SList a
 fromList []     = SList (\n c -> n)
 fromList (x:xs) = cons x (fromList xs)
 
 cons :: a -> SList a -> SList a
-cons a l = SList (\n c -> c a l)
+cons h t = SList (\n c -> c h t)
 
 concat :: SList a -> SList a -> SList a
-concat = error "concat"
+concat (SList f) l = f l (\h t -> cons h (concat t l))
 
 null :: SList a -> Bool
 null (SList f) = f True (\_ _ -> False)
 
 length :: SList a -> Int
-length = error "length"
+length = foldr (\_ acc -> acc + 1) 0
 
 map :: (a -> b) -> SList a -> SList b
-map = error "map"
+map f = foldr (\x acc -> cons (f x) acc) nihil
+
+nihil :: SList a
+nihil = SList (\n c -> n)
 
 zip :: SList a -> SList b -> SList (SPair a b)
-zip = error "zip"
+zip (SList f) (SList g) =
+  f nihil (\hf tf -> g nihil (\hg tg -> cons (fromPair (hf, hg)) (zip tf tg)))
+
+-- эта функция по своей природе частичная
+head :: SList a -> a
+head (SList f) = f (error "empty list") const
 
 foldl :: (b -> a -> b) -> b -> SList a -> b
-foldl = error "foldl"
+foldl f acc l = foldr (\h g x -> g $ f x h) id l acc
 
 foldr :: (a -> b -> b) -> b -> SList a -> b
-foldr = error "foldr"
+foldr f acc (SList g) = g acc (\h t -> f h (foldr f acc t))
 
 take :: Int -> SList a -> SList a
-take = error "take"
+take n (SList f) = f nihil (\h t -> cons h (take (n - 1) t))
