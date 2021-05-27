@@ -153,9 +153,8 @@ lookupFieldMetadata aTag record =
     results = filter ((== aTag) . tag) metadata
 
 -- тут происходит вычисление с контекстом - функция выше есть стрелка клейсли, используя монаду Maybe можно было бы избежать этого костыля внизу(то, что мы принимаем Maybe, а не просто FieldMetadata, скомпозировать их через >>= (bind)
-lookupSubfield :: Maybe FieldMetadata -> Char -> MarcRecordRaw -> Maybe T.Text
-lookupSubfield Nothing _ _ = Nothing
-lookupSubfield (Just fieldMetadata) subfield record =
+lookupSubfield :: FieldMetadata -> Char -> MarcRecordRaw -> Maybe T.Text
+lookupSubfield fieldMetadata subfield record =
   if null results
     then Nothing
     else Just ((T.drop 1 . head) results)
@@ -165,13 +164,21 @@ lookupSubfield (Just fieldMetadata) subfield record =
     results = filter ((== subfield) . T.head) subfields
 
 lookupValue :: T.Text -> Char -> MarcRecordRaw -> Maybe T.Text
-lookupValue aTag subfield record = lookupSubfield entryMetadata subfield record
-  where
-    entryMetadata = lookupFieldMetadata aTag record
+lookupValue aTag subfield record = do
+  entryMetadata <- lookupFieldMetadata aTag record
+  lookupSubfield entryMetadata subfield record
 
 lookupTitle :: MarcRecordRaw -> Maybe Title
 lookupTitle = lookupValue titleTag titleSubfield
 
+lookupFullTitle :: MarcRecordRaw -> Maybe Title
+lookupFullTitle record = do
+  title <- lookupTitle record
+  case lookupValue titleTag 'b' record of
+    Nothing         -> return title
+    (Just extended) -> return (title <> " " <> extended)
+
+-- тут тоже явно можно сделать функцию высшего порядка, паттерн очевиден, для вычленения любого поля
 lookupAuthor :: MarcRecordRaw -> Maybe Author
 lookupAuthor = lookupValue authorTag authorSubfield
 
@@ -180,6 +187,13 @@ marcToPairs marcStream = zip titles authors
   where
     records = allRecords marcStream
     titles = map lookupTitle records
+    authors = map lookupAuthor records
+
+marcToFullPairs :: B.ByteString -> [(Maybe Title, Maybe Author)]
+marcToFullPairs marcStream = zip titles authors
+  where
+    records = allRecords marcStream
+    titles = map lookupFullTitle records
     authors = map lookupAuthor records
 
 pairsToBooks :: [(Maybe Title, Maybe Author)] -> [Book]
@@ -193,7 +207,11 @@ pairsToBooks pairs =
 processRecords :: Int -> B.ByteString -> Html
 processRecords n = booksToHtml . pairsToBooks . take n . marcToPairs
 
+processRecordsExtended :: Int -> B.ByteString -> Html
+processRecordsExtended n = booksToHtml . pairsToBooks . take n . marcToFullPairs
+
 main = do
   marcData <- B.readFile "sample.mrc"
-  let processed = processRecords 485 marcData
+  let processed = processRecordsExtended 500 marcData
   TIO.writeFile "books.html" processed
+  TIO.writeFile "books+boba.html" $ processRecords 500 marcData
