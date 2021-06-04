@@ -55,18 +55,16 @@ crossover ::
   -> (UArray Int Bool, UArray Int Bool)
 crossover (r1, r2) cp =
   let end = (snd . bounds) r1
-   in ( runSTUArray
-          (do st <- thaw r1
-              forM_ [cp .. end] $ \i -> do
-                let val = r2 ! i
-                writeArray st i val
-              return st)
-      , runSTUArray
-          (do st <- thaw r2
-              forM_ [cp .. end] $ \i -> do
-                let val = r1 ! i
-                writeArray st i val
-              return st))
+   in (partCrossOver r1 r2, partCrossOver r2 r1)
+  where
+    end = (snd . bounds) r1
+    partCrossOver r1 r2 =
+      runSTUArray
+        (do st <- thaw r1
+            forM_ [cp .. end] $ \i -> do
+              let val = r2 ! i
+              writeArray st i val
+            return st)
 
 replaceZeroes :: UArray Int Int -> UArray Int Int
 replaceZeroes arr =

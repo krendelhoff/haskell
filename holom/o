@@ -1,0 +1,7 @@
+class Category cat where
+  id :: cat a a
+  (>>) :: cat a b -> cat b c -> cat a c
+
+class Kleisli m where
+  idK :: a -> m a
+  (*>) :: (a -> m b) -> (b -> m c) -> (a -> m c)
