@@ -1,0 +1,8 @@
+import           Data.Char
+
+addStrInts :: String -> String -> Either String Int
+addStrInts s1 s2 = do
+  if all isDigit s1
+    then Left "First value can't be parsed"
+    else return 0
+
