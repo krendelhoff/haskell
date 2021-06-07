@@ -1,46 +1,50 @@
+import           Data.List
 import           Text.Printf
 
-type R = Int
+printError :: IO ()
+printError = printf "-1 -1\n"
 
-type M = Int
+calcn _ 0 _ 0    = 0
+calcn k2 p2 m n2 = k2 `div` (p2 * m + n2)
 
-type Entrance = Int
+calcFloorEntrance k1 m n =
+  let p1 = k1 `div` (m * n)
+      relk = k1 - p1 * m * n
+   in (p1, relk `div` n)
 
-type Floor = Int
-
-type K1 = Int
-
-type N = Int
-
-type C = Int
-
-type K2 = Int
-
-type Flats = Int
-
-calcMinFloor :: Floor -> M -> Entrance -> K2 -> Int
-calcMinFloor n m p k2 =
-  let cac = (p - 1) * m + n
-   in if k2 `mod` cac == 0
-        then k2 `div` cac
-        else k2 `div` cac + 1
-
-calcEntranceFloor :: Flats -> M -> K1 -> (Entrance, Floor)
-calcEntranceFloor flats m k1 = (ent, floor)
+possibleN k2 n2 k1 p2 m = possibleForN
   where
-    ent = (k1 `div` (flats * m)) + 1
-    floor = (k1 `mod` (flats * m)) `div` flats + 1
+    possibleForN = filter checkValid [1 .. (max k1 k2)]
+    checkValid n =
+      let diff = abs (p2 * m * n + n2 * n - k2)
+       in diff >= 0 &&
+          diff < n &&
+          (case n2 == 0 of
+             True  -> n >= k2 - p2 * m * n
+             False -> k2 - p2 * m * n - (n2 - 1) * n >= n)
 
--- рассмотреть еще случай k1 < k2
+result :: [(Int, Int)] -> (Int, Int)
+result lst = (res l1, res l2)
+  where
+    (l1, l2) = unzip lst
+    res l =
+      if (length . nub $ l) == 1
+        then head l
+        else -1
+
 main = do
-  [k1, m, k2, p2, n2] <- (map read . words) <$> getLine
-  let minFloor = calcMinFloor n2 m p2 k2
-      checkValid floor = ((p2 - 1) * minFloor * m + (n2 - 1) * floor) < k2
-  if not . checkValid $ minFloor
-    then printf "-1 -1\n"
-    else if checkValid $ (minFloor + 1)
-           then if m == 1
-                  then printf "0 1\n"
-                  else printf "0 0\n"
-           else let (ent, floor) = calcEntranceFloor minFloor m k1
-                 in printf "%d %d\n" ent floor
+  input <- (map read . words) <$> getLine
+  let lst@[k1, m, k2, p2, n2] =
+        zipWith
+          ($)
+          [(\x -> x - 1), id, (\x -> x - 1), (\x -> x - 1), (\x -> x - 1)]
+          input
+  let lst = map (calcFloorEntrance k1 m) $ possibleN k2 n2 k1 p2 m
+  if n2 >= m
+    then printError
+    else if (p2 == 0 && n2 == 0 && k1 < k2)
+           then printf "1 1\n"
+           else if null lst
+                  then printError
+                  else let (p1, n1) = result lst
+                        in printf "%d %d\n" (p1 + 1) (n1 + 1)
