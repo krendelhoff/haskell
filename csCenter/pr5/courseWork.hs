@@ -91,9 +91,7 @@ alphaConv f t (Var symb) =
 
 alphaEq :: Expr -> Expr -> Bool
 alphaEq (Lam symb1 exp1) (Lam symb2 exp2) =
-  if symb1 `elem` (boundedVars exp2)
-    then alphaEq (renameVar symb1 exp1) (alphaConv symb2 symb1 exp2)
-    else alphaEq exp1 (alphaConv symb2 symb1 exp2)
+  alphaEq exp1 (alphaConv symb2 symb1 exp2)
 alphaEq (Var symb) (Var symb1) = symb == symb1
 alphaEq (exp1 :@ exp2) (exp3 :@ exp4) = alphaEq exp1 exp3 && alphaEq exp2 exp4
 alphaEq _ _ = False
