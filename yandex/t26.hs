@@ -2,8 +2,8 @@ import           Data.List
 import           Text.Printf
 
 findTwoMax :: [Int] -> (Int, Int)
-findTwoMax [] = (undefined, undefined)
-findTwoMax [x] = (undefined, undefined)
+findTwoMax [] = undefined
+findTwoMax [x] = undefined
 findTwoMax (x:y:xs) = properTuple $ findTwoMaxH (x, y) xs
   where
     findTwoMaxH (x, y) [] = (x, y)
