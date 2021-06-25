@@ -5,5 +5,5 @@ import           System.Environment
 
 main :: IO ()
 main = do
-  x <- getLine
-  putStrLn $ readExpr x
+  (expr:_) <- getArgs
+  putStrLn $ readExpr expr

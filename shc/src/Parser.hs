@@ -10,72 +10,66 @@ data LispVal
   | List [LispVal]
   | DottedList [LispVal] LispVal
   | Number Integer
+  | Float Float
   | String String
   | Bool Bool
   | Character Char
 
-readExpr :: String -> String
-readExpr input =
-  case parse parseExpr "lisp" input of
-    Left err -> "No match: " ++ show err
-    Right s ->
-      case s of
-        String s     -> "Found value" ++ ":" ++ s
-        Number n     -> "Found Value" ++ ":" ++ show n
-        Character ch -> "Found Value" ++ ":" ++ [ch]
-        _            -> "Found Value"
-
 symbol :: Parser Char
 symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
+
+readExpr :: String -> String
+readExpr input =
+  case parse parseNumber "lisp" input of
+    Left err -> "No match: " ++ show err
+    Right val ->
+      case val of
+        Number val -> show val
+        _          -> "Found value"
 
 spaces :: Parser ()
 spaces = skipMany1 space
 
-escape :: Parser Char
-escape = do
-  x <- char '\\'
-  y <- oneOf "\"nrt\\"
-  return $
-    case y of
-      '\"' -> '\"'
-      'n'  -> '\n'
-      'r'  -> '\r'
-      't'  -> '\t'
-      '\\' -> '\\'
+escapes :: Parser Char
+escapes =
+  char '\\' *>
+  (char '\"' <|> (char 'n' *> pure '\n') <|> (char 'r' *> pure '\r') <|>
+   (char 't' *> pure '\t') <|>
+   char '\\')
 
 parseString :: Parser LispVal
-parseString = do
-  char '"'
-  x <- many (escape <|> noneOf "\"")
-  char '"'
-  return $ String x
+parseString =
+  fmap String (char '"' *> many (escapes <|> noneOf "\"") <* char '"')
 
 parseAtom :: Parser LispVal
-parseAtom = do
-  first <- letter <|> symbol
-  rest <- many (letter <|> digit <|> symbol)
-  let atom = first : rest
-  return $
-    case atom of
-      "#t" -> Bool True
-      "#f" -> Bool False
-      _    -> Atom atom
+parseAtom =
+  fmap
+    (\atom ->
+       case atom of
+         "#t" -> Bool True
+         "#f" -> Bool False
+         _    -> Atom atom)
+    ((:) <$> (letter <|> symbol) <*> many (letter <|> digit <|> symbol))
 
 parseNumber :: Parser LispVal
-parseNumber = do
-  mode <- string "#o" <|> string "#x" <|> string ""
-  x <- many1 digit
-  return $
-    case mode of
-      ""   -> Number . read $ x
-      "#o" -> Number . fst . head . readOct $ x
-      "#x" -> Number . fst . head . readHex $ x
+parseNumber =
+  fmap
+    (Number . fst . head)
+    ((fmap reads $ many1 digit) <|>
+     (fmap readHex $ (try $ char '#' *> char 'x' *> many1 digit)) <|>
+     (fmap readOct $ (char '#' *> char 'o' *> many1 digit)))
 
 parseCharacter :: Parser LispVal
-parseCharacter = do
-  string "#\\"
-  ch <- letter <|> symbol <|> oneOf "() "
-  return $ Character ch
+parseCharacter =
+  fmap Character $
+  char '#' *> char '\\' *>
+  ((string "space" *> pure ' ') <|> (string "newline" *> pure '\n') <|> anyChar)
+
+parseFloat :: Parser LispVal
+parseFloat =
+  fmap
+    (Float . fst . head . readFloat)
+    ((++) <$> ((++) <$> many1 digit <*> string ".") <*> many1 digit)
 
 parseExpr :: Parser LispVal
-parseExpr = parseCharacter <|> parseNumber <|> parseString <|> parseAtom
+parseExpr = parseNumber

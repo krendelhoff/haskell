@@ -1,7 +1,7 @@
 instance Applicative Maybe where
   pure = Just
   Nothing <*> _  = Nothing
-  (Just g) <*> x = fmag g x
+  (Just g) <*> x = fmap g x
 -- fmag g cont == pure g <*> cont
 -- именно отсюда берется (+) <$> Just 2 <*> Just 3 вот такой прием постоянно применяющийся
 -- pure (+) <*> Just 2 <*> Just 3 == fmap (+) (Just 2) <*> Just 3 == (+) <$> Just 2 <*> Just 3

@@ -31,7 +31,7 @@ xs !!! n = foldr fun ini xs n
 foldl'' :: (b -> a -> b) -> b -> [a] -> b
 foldl'' f v xs = foldr (fun f) ini xs v
   where
-    fun = \f x acc v -> f (acc v) x
+    fun = \f x acc v -> acc (f v x)
     ini = id
 
 data Tree a

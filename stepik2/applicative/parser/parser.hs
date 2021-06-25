@@ -7,6 +7,7 @@ newtype Parser a =
     { apply :: String -> [(a, String)]
     }
 
+-- это чисто синтаксический шум, который существует только в дезайн-тайме
 instance Functor Parser where
   fmap f p = Parser fun
     where
@@ -77,6 +78,12 @@ many1 p =
     (res1, s'') <- apply (many p) s'
     return (res : res1, s'')
 
+skipMany :: Parser a -> Parser ()
+skipMany p = (p *> skipMany p) <|> pure ()
+
+skipMany1 :: Parser a -> Parser ()
+skipMany1 p = p *> skipMany p
+
 nat :: Parser Int
 nat = toInt <$> many1 digit
 
@@ -84,7 +91,7 @@ toInt :: [Int] -> Int
 toInt lst = foldr fun (const 0) lst (length lst - 1)
   where
     fun x _ 0   = x
-    fun x acc n = (+) (x * 10 ^ n) (acc (n - 1))
+    fun x acc n = x * 10 ^ n + acc (n - 1)
 
 mult :: Parser Int
 mult = (*) <$> nat <* char '*' <*> nat
