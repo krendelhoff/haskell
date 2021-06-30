@@ -2,27 +2,27 @@ import           Data.List
 import           Text.Printf
 
 findTwoMax :: [Int] -> (Int, Int)
-findTwoMax [] = undefined
-findTwoMax [x] = undefined
-findTwoMax (x:y:xs) = properTuple $ findTwoMaxH (x, y) xs
+findTwoMax (x:y:xs) = fTM (max x y) (min x y) xs
   where
-    findTwoMaxH (x, y) [] = (x, y)
-    findTwoMaxH (x, y) (z:zs) =
-      findTwoMaxH
-        (snd .
-         maximumBy
-           (\t1@(p1, _) t2@(p2, _) ->
-              if p1 > p2
-                then GT
-                else LT) $
-         [(x * y, (x, y)), (y * z, (y, z)), (x * z, (x, z))])
-        zs
-    properTuple (a, b) =
-      if a > b
-        then (b, a)
-        else (a, b)
+    fTM x y [] = (x, y)
+    fTM x y (z:zs)
+      | y >= z = fTM x y zs
+      | z > y && z < x = fTM x z zs
+      | z >= x = fTM z x zs
+
+findTwoMin :: [Int] -> (Int, Int)
+findTwoMin (x:y:xs) = fTM (min x y) (max x y) xs
+  where
+    fTM x y [] = (x, y)
+    fTM x y (z:zs)
+      | y <= z = fTM x y zs
+      | z > x && z < y = fTM x z zs
+      | z <= x = fTM z x zs
 
 main = do
   lst <- (map read . words) <$> getLine
   let (a, b) = findTwoMax lst
-  printf "%d %d\n" a b
+      (c, d) = findTwoMin lst
+  if a * b > c * d
+    then printf "%d %d\n" b a
+    else printf "%d %d\n" c d
