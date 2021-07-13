@@ -17,9 +17,17 @@ instance Functor m => Functor (ExceptT e m) where
   fmap h = ExceptT . fmap (fmap h) . runExceptT
   -- Either уже Functor
 
-instance Applicative m => Applicative (ExceptT e m) where
+instance Monad m => Applicative (ExceptT e m) where
   pure = ExceptT . pure . Right
-  af <*> ax = ExceptT $ liftA2 (<*>) (runExceptT af) (runExceptT ax)
+  mef <*> mea =
+    ExceptT $ do
+      ef <- runExceptT mef
+      either (return . Left) (\f -> fmap (fmap f) runExceptT mea) ef
+                            -- два барьера - m и Either
+  --af <*> ax = ExceptT $ liftA2 (<*>) (runExceptT af) (runExceptT ax)
+  -- в аппликативном вычислении структура четко задана - он не может прерваться
+  -- если выпало исключение, он проведет все две ветки вычислений (как в композиции аплликативов)
+  -- поэтому тут можно адекватно использовать только монадический constraint
 
 instance Monad m => Monad (ExceptT e m) where
   (>>=) :: ExceptT e m a -> (a -> ExceptT e m b) -> ExceptT e m b
