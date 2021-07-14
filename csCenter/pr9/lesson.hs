@@ -1,4 +1,4 @@
-import           Control.Monad (ap, guard)
+import           Control.Monad (ap, foldM, guard)
 
 filter' :: (a -> Bool) -> [a] -> [a]
 filter' p xs = do
@@ -28,7 +28,16 @@ liftA2' f xs ys = (f <$> xs) `ap` ys
 (<*>.) = ap
 
 (>=>) :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
-amb >=> bmc = \a -> amb a >>= bmc
+--amb >=> bmc = \a -> amb a >>= bmc
+amb >=> bmc = \a -> join . fmap bmc $ amb a
 
 join :: Monad m => m (m a) -> m a
 join mma = mma >>= id
+
+type Board = Int
+
+next :: Board -> [Board]
+next ini = filter (>= 0) . filter (<= 9) $ [ini + 2, ini - 1]
+
+doNTurns :: Int -> Board -> [Board]
+doNTurns n ini = foldr (>=>) return (replicate n next) ini

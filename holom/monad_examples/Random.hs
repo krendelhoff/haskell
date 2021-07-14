@@ -70,10 +70,12 @@ data Tree a
   | Node a [Tree a]
   deriving (Eq, Show)
 
-randomTree :: Depth -> Tree Int
-randomTree d
+type Seed = Int
+
+randomTree :: Depth -> Seed -> Tree Int
+randomTree d _
   | d <= 0 = Nil
-randomTree d = randomTreeH d 0.2
+randomTree d seed = randomTreeH d seed
   where
     get :: Random Double
     get = State $ \st -> (st, st)
